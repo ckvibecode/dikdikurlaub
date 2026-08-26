@@ -28,11 +28,27 @@ npm run dev                  # http://localhost:3000
 ## Deployment (Render)
 
 1. Repo auf GitHub pushen.
-2. In Render: "New" -> "Blueprint" -> Repo auswählen (nutzt `render.yaml`).
-3. Nach dem ersten Deploy in den Web-Service-Settings die Env-Vars `TRIP_CODE`, `TRIP_NAME`,
-   `TRIP_START_DATE`, `TRIP_END_DATE` setzen (in `render.yaml` bewusst nicht automatisch gesetzt).
-4. Render führt bei jedem Deploy automatisch `prisma migrate deploy` + `prisma db seed` aus
-   (siehe `preDeployCommand`).
+2. In Render: "New +" -> "PostgreSQL" -> Name (z. B. `dikdik-urlaubsapp-db`), Plan **Free** ->
+   erstellen. Nach dem Anlegen die **Internal Database URL** kopieren.
+3. In Render: "New +" -> "Web Service" -> Repo auswählen -> Runtime **Node**, Plan **Free**.
+4. Build Command:
+   ```
+   npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npx prisma db seed && npm run build
+   ```
+5. Start Command:
+   ```
+   npm run start
+   ```
+6. Env-Vars im Web-Service setzen:
+   - `DATABASE_URL` -> die in Schritt 2 kopierte Internal Database URL
+   - `SESSION_SECRET` -> zufälliger Wert (z. B. `openssl rand -base64 32`)
+   - `NODE_ENV` -> `production`
+   - `TRIP_CODE`, `TRIP_NAME`, `TRIP_START_DATE`, `TRIP_END_DATE` -> eigene Werte für den Trip
+7. Deploy auslösen. Der Build führt bei jedem Deploy automatisch `prisma migrate deploy` +
+   `prisma db seed` aus (Seed-Skript ist idempotent, kann gefahrlos mehrfach laufen).
+
+`--include=dev` ist nötig, da `NODE_ENV=production` sonst devDependencies (u. a. `tsx` fürs
+Seed-Skript, `typescript`/`tailwindcss` fürs Build) überspringt.
 
 Hinweis: Render Free-Postgres läuft nach einer festen Frist ab, der Web-Service schläft bei
 Inaktivität kurz ein (Cold-Start) &ndash; für die Dauer eines Urlaubs unkritisch.
