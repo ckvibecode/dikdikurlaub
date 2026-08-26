@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Trip {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  timezone  String   @default("Europe/Berlin")
+  createdAt DateTime @default(now())
+
+  members         Member[]
+  penaltyTypes    PenaltyType[]
+  penaltyEntries  PenaltyEntry[]
+  drinkCategories DrinkCategory[]
+  drinkEntries    DrinkEntry[]
+  planItems       PlanItem[]
+  challenges      Challenge[]
+  awards          Award[]
+  pointsLedger    PointsLedger[]
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+model Member {
+  id            String     @id @default(cuid())
+  tripId        String
+  trip          Trip       @relation(fields: [tripId], references: [id])
+  name          String
+  avatar        String
+  pinHash       String
+  role          MemberRole @default(MEMBER)
+  points        Int        @default(0)
+  level         Int        @default(1)
+  currentStreak Int        @default(0)
+  longestStreak Int        @default(0)
+  lastActiveDay DateTime?
+  createdAt     DateTime   @default(now())
+
+  drinkEntries         DrinkEntry[]
+  penaltiesReceived    PenaltyEntry[]        @relation("Target")
+  penaltiesProposed    PenaltyEntry[]        @relation("Proposer")
+  votes                Vote[]
+  planItemsCreated     PlanItem[]
+  planCompletions      PlanItemCompletion[]
+  challengeCompletions ChallengeCompletion[]
+  awardVotesGiven      AwardVote[]           @relation("Voter")
+  awardVotesReceived   AwardVote[]           @relation("Nominee")
+  ledgerEntries        PointsLedger[]
+
+  @@unique([tripId, name])
+  @@unique([tripId, avatar])
+}
+
+// ---- Strafenkatalog ----
+
+model PenaltyType {
+  id          String  @id @default(cuid())
+  tripId      String
+  trip        Trip    @relation(fields: [tripId], references: [id])
+  title       String
+  consequence String
+  icon        String
+  points      Int     @default(0)
+  isActive    Boolean @default(true)
+
+  entries PenaltyEntry[]
+}
+
+enum PenaltyStatus {
+  PENDING_TARGET
+  PENDING_VOTE
+  APPROVED
+  REJECTED
+}
+
+model PenaltyEntry {
+  id                 String        @id @default(cuid())
+  tripId             String
+  trip               Trip          @relation(fields: [tripId], references: [id])
+  penaltyTypeId      String?
+  penaltyType        PenaltyType?  @relation(fields: [penaltyTypeId], references: [id])
+  freeTitle          String?
+  freeConsequence    String?
+  targetMemberId     String
+  target             Member        @relation("Target", fields: [targetMemberId], references: [id])
+  proposedByMemberId String
+  proposedBy         Member        @relation("Proposer", fields: [proposedByMemberId], references: [id])
+  status             PenaltyStatus
+  points             Int           @default(0)
+  createdAt          DateTime      @default(now())
+  resolvedAt         DateTime?
+  fulfilledAt        DateTime?
+
+  votes Vote[]
+
+  @@index([tripId, createdAt])
+}
+
+model Vote {
+  id             String       @id @default(cuid())
+  penaltyEntryId String
+  penaltyEntry   PenaltyEntry @relation(fields: [penaltyEntryId], references: [id])
+  memberId       String
+  member         Member       @relation(fields: [memberId], references: [id])
+  value          Boolean
+  createdAt      DateTime     @default(now())
+
+  @@unique([penaltyEntryId, memberId])
+}
+
+// ---- Getränke-Tracker ----
+
+// Getränke-Kategorien sind pro Trip in der DB gepflegt (nicht mehr als fixes Enum), damit ein
+// Admin während des Trips weitere Kategorien hinzufügen kann. Die vier Standard-Kategorien
+// werden beim Trip-Seed mit isDefault=true angelegt und können nicht gelöscht werden.
+model DrinkCategory {
+  id        String   @id @default(cuid())
+  tripId    String
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  label     String
+  points    Int
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  entries DrinkEntry[]
+
+  @@unique([tripId, label])
+}
+
+model DrinkEntry {
+  id         String        @id @default(cuid())
+  tripId     String
+  trip       Trip          @relation(fields: [tripId], references: [id])
+  memberId   String
+  member     Member        @relation(fields: [memberId], references: [id])
+  categoryId String
+  category   DrinkCategory @relation(fields: [categoryId], references: [id])
+  quantity   Int           @default(1)
+  createdAt  DateTime      @default(now())
+
+  @@index([tripId, memberId, createdAt])
+  @@index([categoryId])
+}
+
+// ---- Tagesplanung ----
+
+model PlanItem {
+  id                 String   @id @default(cuid())
+  tripId             String
+  trip               Trip     @relation(fields: [tripId], references: [id])
+  day                DateTime
+  startTime          String?
+  endTime            String?
+  title              String
+  description        String?
+  points             Int      @default(0)
+  sortOrder          Int      @default(0)
+  createdByMemberId  String
+  createdBy          Member   @relation(fields: [createdByMemberId], references: [id])
+
+  completions PlanItemCompletion[]
+
+  @@index([tripId, day])
+  @@index([createdByMemberId])
+}
+
+model PlanItemCompletion {
+  id          String   @id @default(cuid())
+  planItemId  String
+  planItem    PlanItem @relation(fields: [planItemId], references: [id])
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id])
+  completedAt DateTime @default(now())
+
+  @@unique([planItemId, memberId])
+}
+
+// ---- Gamification: Challenges ----
+
+model Challenge {
+  id          String   @id @default(cuid())
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id])
+  title       String
+  description String?
+  points      Int
+  repeatable  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+
+  completions ChallengeCompletion[]
+}
+
+model ChallengeCompletion {
+  id          String    @id @default(cuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  memberId    String
+  member      Member    @relation(fields: [memberId], references: [id])
+  completedAt DateTime  @default(now())
+}
+
+// ---- Community Awards ----
+
+enum AwardScope {
+  DAILY
+  TRIP_FINAL
+}
+
+model Award {
+  id     String     @id @default(cuid())
+  tripId String
+  trip   Trip       @relation(fields: [tripId], references: [id])
+  title  String
+  scope  AwardScope
+  day    DateTime?
+
+  votes AwardVote[]
+}
+
+model AwardVote {
+  id              String   @id @default(cuid())
+  awardId         String
+  award           Award    @relation(fields: [awardId], references: [id])
+  voterMemberId   String
+  voter           Member   @relation("Voter", fields: [voterMemberId], references: [id])
+  nomineeMemberId String
+  nominee         Member   @relation("Nominee", fields: [nomineeMemberId], references: [id])
+  createdAt       DateTime @default(now())
+
+  @@unique([awardId, voterMemberId])
+}
+
+// ---- Punkte-Ledger (auditierbare Quelle der Wahrheit) ----
+
+enum PointsSource {
+  CHALLENGE
+  STREAK
+  DRINK_RANKING
+  PLAN_ITEM
+  PENALTY
+  AWARD
+  ADMIN_ADJUST
+}
+
+model PointsLedger {
+  id        String       @id @default(cuid())
+  tripId    String
+  trip      Trip         @relation(fields: [tripId], references: [id])
+  memberId  String
+  member    Member       @relation(fields: [memberId], references: [id])
+  amount    Int
+  source    PointsSource
+  sourceId  String?
+  reason    String
+  createdAt DateTime     @default(now())
+
+  @@index([tripId, memberId])
+}
