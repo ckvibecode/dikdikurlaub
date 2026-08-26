@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --color-background: #0a0c10;
+  --color-surface: #15181f;
+  --color-surface-hover: #1c2029;
+  --color-accent-lime: #c8ff4d;
+  --color-accent-violet: #7a6ff0;
+  --color-muted-1: #9aa2b1;
+  --color-muted-2: #626a78;
+  --color-muted-3: #4a505c;
+  --color-foreground: #f2f3f5;
+  --radius-blob: 40% 60% 55% 45% / 55% 45% 60% 40%;
+}
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-accent-lime: var(--color-accent-lime);
+  --color-accent-violet: var(--color-accent-violet);
+  --color-muted-1: var(--color-muted-1);
+  --color-muted-2: var(--color-muted-2);
+  --color-muted-3: var(--color-muted-3);
+  --color-foreground: var(--color-foreground);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-ibm-plex-mono);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+.rounded-blob {
+  border-radius: var(--radius-blob);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
