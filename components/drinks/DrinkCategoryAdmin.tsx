@@ -19,8 +19,8 @@ export function DrinkCategoryAdmin({ customCategories }: { customCategories: Cus
   const [deletePending, startDeleteTransition] = useTransition()
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-accent-violet/30 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#a99cff]">Admin: Getränke-Kategorien</p>
+    <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-member/30 p-4">
+      <p className="text-xs font-semibold uppercase tracking-wide text-member">Admin: Getränke-Kategorien</p>
 
       {customCategories.length > 0 && (
         <div className="flex flex-col gap-1.5">
@@ -33,7 +33,7 @@ export function DrinkCategoryAdmin({ customCategories }: { customCategories: Cus
                 disabled={deletePending}
                 onClick={() => startDeleteTransition(() => deleteDrinkCategory(cat.id))}
                 aria-label={`${cat.label} entfernen`}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-white/[0.06] hover:text-[#ff6f6f] disabled:opacity-50"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-white/[0.06] hover:text-danger disabled:opacity-50"
               >
                 <TrashIcon className="h-4 w-4" />
               </button>
@@ -46,7 +46,7 @@ export function DrinkCategoryAdmin({ customCategories }: { customCategories: Cus
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="self-start text-xs font-semibold text-[#a99cff]"
+          className="self-start text-xs font-semibold text-member"
         >
           + Neue Kategorie hinzufügen
         </button>
@@ -61,7 +61,7 @@ export function DrinkCategoryAdmin({ customCategories }: { customCategories: Cus
               placeholder="z.B. Sekt"
               required
               maxLength={20}
-              className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-violet/60"
+              className="flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
             />
             <input
               type="number"
@@ -70,10 +70,10 @@ export function DrinkCategoryAdmin({ customCategories }: { customCategories: Cus
               min={0}
               max={20}
               required
-              className="w-20 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-violet/60"
+              className="w-20 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
             />
           </div>
-          {state?.error && <p className="text-sm text-[#ff6f6f]">{state.error}</p>}
+          {state?.error && <p className="text-sm text-danger">{state.error}</p>}
           <div className="flex gap-2">
             <Button type="submit" variant="secondary" disabled={pending} className="flex-1">
               {pending ? 'Anlegen...' : 'Anlegen'}

@@ -45,7 +45,9 @@ export function PenaltyFeedItem({ entry }: { entry: PenaltyFeedEntry }) {
         </div>
         <div className="flex items-center gap-1.5">
           {entry.points > 0 && (
-            <span className="font-mono text-[11px] font-semibold text-[#ff6f6f]">-{entry.points} Pkt</span>
+            <span className="whitespace-nowrap font-mono text-xs font-semibold text-danger">
+              -{entry.points} Pkt
+            </span>
           )}
           <StatusBadge status={entry.status} fulfilled={entry.fulfilled} />
           {entry.canDelete && (
@@ -54,7 +56,7 @@ export function PenaltyFeedItem({ entry }: { entry: PenaltyFeedEntry }) {
               disabled={pending}
               onClick={() => startTransition(() => deletePenaltyEntry(entry.id))}
               aria-label="Strafe löschen"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-white/[0.06] hover:text-[#ff6f6f] disabled:opacity-50"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-2 transition-colors hover:bg-white/[0.06] hover:text-danger disabled:opacity-50"
             >
               <TrashIcon className="h-3.5 w-3.5" />
             </button>
@@ -87,7 +89,7 @@ export function PenaltyFeedItem({ entry }: { entry: PenaltyFeedEntry }) {
             variant="primary"
             disabled={pending}
             onClick={() => startTransition(() => voteOnPenalty(entry.id, true))}
-            className={entry.myVote === true ? 'ring-2 ring-accent-lime' : ''}
+            className={entry.myVote === true ? 'ring-2 ring-member' : ''}
           >
             Ja, zählt
           </Button>
@@ -117,13 +119,14 @@ export function PenaltyFeedItem({ entry }: { entry: PenaltyFeedEntry }) {
             type="button"
             disabled={pending}
             onClick={() => startTransition(() => toggleFulfilled(entry.id))}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
+            aria-pressed={entry.fulfilled}
+            className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors disabled:opacity-50 ${
               entry.fulfilled
-                ? 'bg-accent-lime text-background'
-                : 'border border-white/15 bg-transparent text-muted-1 hover:border-accent-lime/50 hover:text-accent-lime'
+                ? 'bg-member text-background'
+                : 'border border-white/15 bg-transparent text-muted-1 hover:border-member/50 hover:text-member'
             }`}
           >
-            {entry.fulfilled && <CheckIcon className="h-3.5 w-3.5" />}
+            {entry.fulfilled && <CheckIcon className="h-3.5 w-3.5" aria-hidden="true" />}
             {entry.fulfilled ? 'Erfüllt' : 'Als erfüllt abhaken'}
           </button>
         </div>
@@ -133,8 +136,16 @@ export function PenaltyFeedItem({ entry }: { entry: PenaltyFeedEntry }) {
 }
 
 function StatusBadge({ status, fulfilled }: { status: PenaltyFeedEntry['status']; fulfilled: boolean }) {
-  if (status === 'APPROVED') return <PillBadge tone="lime">{fulfilled ? 'Erfüllt' : 'Bestätigt'}</PillBadge>
+  // Nur die tatsaechlich erledigte Strafe bekommt den positiven Akzent; "Bestaetigt"
+  // bliebe sonst neben den roten Minuspunkten ein zweiter lauter Ton in derselben Zeile.
+  if (status === 'APPROVED') {
+    return fulfilled ? (
+      <PillBadge tone="lime">Erfüllt</PillBadge>
+    ) : (
+      <PillBadge tone="neutral">Bestätigt</PillBadge>
+    )
+  }
   if (status === 'REJECTED') return <PillBadge tone="neutral">Abgelehnt</PillBadge>
-  if (status === 'PENDING_TARGET') return <PillBadge tone="violet">Wartet auf Bestätigung</PillBadge>
-  return <PillBadge tone="violet">Abstimmung läuft</PillBadge>
+  if (status === 'PENDING_TARGET') return <PillBadge tone="neutral">Wartet auf Bestätigung</PillBadge>
+  return <PillBadge tone="neutral">Abstimmung läuft</PillBadge>
 }

@@ -7,7 +7,7 @@ export function DrinkHistoryChart({ days }: { days: Array<{ label: string; count
         <div key={i} className="flex flex-1 flex-col items-center gap-1.5">
           <span className="font-mono text-[10px] text-muted-1">{d.count}</span>
           <div
-            className="w-full rounded-t-full bg-accent-lime"
+            className="w-full rounded-t-full bg-member"
             style={{
               height: Math.max(4, (d.count / max) * 56),
               opacity: d.count === 0 ? 0.12 : 1,

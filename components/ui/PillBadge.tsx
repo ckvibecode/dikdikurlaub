@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 
 const TONE_CLASSES = {
+  member: 'bg-member/14 border-member/45 text-member',
   lime: 'bg-accent-lime/12 border-accent-lime/40 text-accent-lime',
-  violet: 'bg-accent-violet/16 border-accent-violet/45 text-[#a99cff]',
+  danger: 'bg-danger/12 border-danger/40 text-danger',
   neutral: 'bg-white/[0.06] border-white/10 text-muted-1',
 } as const
 
@@ -14,7 +15,7 @@ const ROTATE_CLASSES = {
 
 export function PillBadge({
   children,
-  tone = 'lime',
+  tone = 'member',
   rotate = 'none',
   className = '',
 }: {

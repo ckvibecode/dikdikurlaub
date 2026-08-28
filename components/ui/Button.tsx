@@ -1,8 +1,8 @@
 import type { ButtonHTMLAttributes } from 'react'
 
 const VARIANT_CLASSES = {
-  primary: 'bg-accent-lime text-background hover:bg-accent-lime/90',
-  secondary: 'bg-transparent border border-accent-violet/50 text-accent-violet hover:bg-accent-violet/10',
+  primary: 'bg-member text-background hover:bg-member/90',
+  secondary: 'bg-transparent border border-member/50 text-member hover:bg-member/10',
   ghost: 'bg-white/[0.06] text-foreground hover:bg-white/[0.1]',
 } as const
 

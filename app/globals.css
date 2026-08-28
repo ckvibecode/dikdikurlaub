@@ -7,10 +7,19 @@
   --color-accent-lime: #c8ff4d;
   --color-accent-violet: #7a6ff0;
   --color-muted-1: #9aa2b1;
-  --color-muted-2: #626a78;
-  --color-muted-3: #4a505c;
+  /* muted-2/-3 waren #626a78 / #4a505c und fielen bei 3.3:1 bzw. 2.4:1 durch WCAG AA.
+     Neue Werte: 4.70:1 auf der Karte bzw. 3.81:1 auf der Nav (Icon-Schwelle 3:1). */
+  --color-muted-2: #7a8494;
+  --color-muted-3: #67707f;
   --color-foreground: #f2f3f5;
+  --color-danger: #ff6f6f;
+
+  /* Profilfarbe des eingeloggten Mitglieds. Wird im App-Layout pro Session
+     ueberschrieben; der Fallback gilt nur fuer die Auth-Screens. */
+  --member: #c8ff4d;
+
   --radius-blob: 40% 60% 55% 45% / 55% 45% 60% 40%;
+  --ease-settle: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -23,6 +32,8 @@
   --color-muted-2: var(--color-muted-2);
   --color-muted-3: var(--color-muted-3);
   --color-foreground: var(--color-foreground);
+  --color-danger: var(--color-danger);
+  --color-member: var(--member);
   --font-sans: var(--font-space-grotesk);
   --font-mono: var(--font-ibm-plex-mono);
 }
@@ -32,10 +43,86 @@ body {
   color: var(--color-foreground);
 }
 
+::selection {
+  background: color-mix(in srgb, var(--member) 28%, transparent);
+  color: var(--color-foreground);
+}
+
+input,
+textarea {
+  caret-color: var(--member);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--member) 70%, transparent);
+  outline-offset: 2px;
+}
+
 .rounded-blob {
   border-radius: var(--radius-blob);
 }
 
+/* Flat-By-Default: kein box-shadow. Tiefe entsteht durch einen weichen, weit
+   gestreuten Bloom hinter dem Element — nicht durch einen engen Neon-Ring. */
+.bloom {
+  position: relative;
+  isolation: isolate;
+}
+
+.bloom::before {
+  content: '';
+  position: absolute;
+  inset: -60%;
+  z-index: -1;
+  border-radius: 9999px;
+  background: var(--bloom-color, var(--member));
+  opacity: 0.17;
+  filter: blur(22px);
+  pointer-events: none;
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/* Der Dik-Dik richtet sich auf: ein einziger, komponierter Auftritt beim Laden. */
+.mark-well {
+  transform: rotate(-6deg);
+}
+
+@keyframes mark-perk {
+  from {
+    opacity: 0;
+    transform: translateY(9px) rotate(5deg) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-6deg) scale(1);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-mark-perk {
+  animation: mark-perk 760ms var(--ease-settle) backwards;
+}
+
+.animate-rise-in {
+  animation: rise-in 620ms var(--ease-settle) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-mark-perk,
+  .animate-rise-in {
+    animation: none;
+  }
 }

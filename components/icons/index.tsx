@@ -9,6 +9,9 @@ const base = {
   strokeWidth: 1.8,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
+  // Die Icons sind durchgaengig dekorativ: jedes sitzt neben einem Textlabel oder in
+  // einem Button, der seinen eigenen Namen traegt.
+  'aria-hidden': true,
 }
 
 export function HomeIcon(props: IconProps) {
@@ -79,6 +82,16 @@ export function CheckIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>
       <path d="M4 10.5 8 15l8-10" />
+    </svg>
+  )
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M6.5 8.5V6a3.5 3.5 0 1 1 7 0v2.5" />
+      <rect x="4.5" y="8.5" width="11" height="7.5" rx="2.2" />
+      <path d="M10 11.5v2" />
     </svg>
   )
 }

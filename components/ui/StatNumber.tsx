@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 
 const SIZE_CLASSES = {
+  xs: 'text-xs',
   sm: 'text-sm',
   md: 'text-base',
   lg: 'text-2xl',

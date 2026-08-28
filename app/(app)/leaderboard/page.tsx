@@ -2,6 +2,7 @@ import { getSessionMember } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Card } from '@/components/ui/Card'
 import { StatNumber } from '@/components/ui/StatNumber'
+import { getAvatarHex } from '@/lib/avatar'
 
 export default async function LeaderboardPage() {
   const member = await getSessionMember()
@@ -9,44 +10,47 @@ export default async function LeaderboardPage() {
 
   const members = await prisma.member.findMany({
     where: { tripId: member.tripId },
-    orderBy: { points: 'desc' },
+    orderBy: [{ points: 'desc' }, { createdAt: 'asc' }],
   })
+
+  // Bei Punktgleichstand gibt es keine Fuehrung: sonst kroent die Sortierreihenfolge
+  // willkuerlich jemanden.
+  const topPoints = members[0]?.points ?? 0
+  const leaderIsUnique = topPoints > 0 && members.filter((m) => m.points === topPoints).length === 1
 
   return (
     <div className="flex flex-col gap-4 px-4.5 pb-6 pt-5.5">
-      <h1 className="text-lg font-bold text-foreground">Rangliste</h1>
-      <Card>
-        <div className="flex flex-col gap-2">
+      <h1 className="animate-rise-in text-lg font-bold text-foreground">Rangliste</h1>
+      <Card className="animate-rise-in p-4" style={{ animationDelay: '70ms' }}>
+        <div className="flex flex-col gap-1.5">
           {members.map((m, i) => {
             const isMe = m.id === member.id
+            const isLeader = i === 0 && leaderIsUnique
+            const hex = getAvatarHex(m.avatar)
             return (
               <div
                 key={m.id}
-                className={`flex items-center gap-3 rounded-2xl px-2.5 py-2.5 ${
-                  i === 0 ? 'bg-accent-lime/7' : isMe ? 'bg-accent-violet/10' : ''
-                }`}
+                className="flex items-center gap-3 rounded-2xl px-2.5 py-2.5"
+                style={isMe ? { backgroundColor: `${hex}1f` } : undefined}
               >
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
-                    i === 0 ? '-rotate-6 rounded-[40%_60%_55%_45%/55%_45%_60%_40%] text-background' : 'bg-[#1c2029] text-muted-1'
+                {/* Rang 1: Groesse, Blob-Form und Bloom statt einer zweiten Farbe. */}
+                <span
+                  className={`flex shrink-0 items-center justify-center ${
+                    isLeader ? 'bloom h-11 w-11 rounded-blob -rotate-6' : 'h-9 w-9 rounded-full'
                   }`}
-                  style={
-                    i === 0
-                      ? { backgroundColor: '#c8ff4d', boxShadow: '0 0 12px rgba(200,255,77,0.5)' }
-                      : isMe
-                        ? { backgroundColor: '#7a6ff0', color: '#0a0c10' }
-                        : undefined
-                  }
+                  style={{ backgroundColor: hex, '--bloom-color': hex } as React.CSSProperties}
                 >
-                  {i + 1}
-                </div>
-                <div className="flex-1">
-                  <p className={`text-sm font-semibold ${isMe ? 'text-[#a99cff]' : 'text-foreground'}`}>
+                  <StatNumber size={isLeader ? 'md' : 'sm'} className="font-bold text-background">
+                    {i + 1}
+                  </StatNumber>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-foreground">
                     {isMe ? `Du (${m.name})` : m.name}
                   </p>
-                  <p className="text-[11px] text-muted-2">Level {m.level} &middot; {m.currentStreak}-Tage-Streak</p>
+                  <p className="text-sm text-muted-1">Level {m.level}</p>
                 </div>
-                <StatNumber size="md" className={i === 0 ? 'text-accent-lime' : isMe ? 'text-[#a99cff]' : 'text-muted-1'}>
+                <StatNumber size="md" className="shrink-0 text-foreground">
                   {m.points}
                 </StatNumber>
               </div>

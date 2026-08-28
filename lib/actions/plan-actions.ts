@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { getSessionMember } from '@/lib/auth'
-import { applyPoints, ensureStreakUpToDate } from '@/lib/gamification'
+import { applyPoints } from '@/lib/gamification'
 
 export interface ActionState {
   error?: string
@@ -107,7 +107,6 @@ export async function toggleParticipation(planItemId: string) {
           reason: `Teilnahme bestätigt (${planItem.title})`,
         })
       }
-      await ensureStreakUpToDate(tx, member.tripId, member.id)
     })
   }
 

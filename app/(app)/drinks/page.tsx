@@ -2,6 +2,7 @@ import { getSessionMember } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { getTripDayKey, TRIP_TZ } from '@/lib/dates'
 import { getDrinkComment } from '@/lib/drinks'
+import { getDrinkWindow } from '@/lib/drink-window'
 import { Card } from '@/components/ui/Card'
 import { StatNumber } from '@/components/ui/StatNumber'
 import { DrinkCounterGrid } from '@/components/drinks/DrinkCounterGrid'
@@ -65,45 +66,73 @@ export default async function DrinksPage() {
 
   const customCategories = categories.filter((c) => !c.isDefault)
 
+  const drinkWindow = getDrinkWindow()
+  const opensAtLabel = timeFormatter.format(drinkWindow.opensAt)
+
   return (
     <div className="flex flex-col gap-4 px-4.5 pb-6 pt-5.5">
-      <h1 className="text-lg font-bold text-foreground">Getränke-Tracker</h1>
+      <h1 className="text-base font-bold text-foreground">Getränke-Tracker</h1>
 
       <Card>
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-bold text-foreground">Heute</span>
+          <h2 className="text-sm font-bold text-foreground">Heute</h2>
           <div className="flex items-baseline gap-2">
-            <StatNumber size="xl" className="text-accent-lime">
+            {/* Vor 18:00 bleibt die Zahl da, verliert aber die Signalfarbe: eine leuchtende
+                Null liest sich sonst wie ein Ziel, das noch zu erreichen waere. */}
+            <StatNumber size="xl" className={drinkWindow.open ? 'text-member' : 'text-muted-2'}>
               {todayTotal}
             </StatNumber>
-            <span className="font-mono text-xs text-muted-2">+{todayPoints} Pkt</span>
+            {drinkWindow.open && (
+              <span className="text-xs text-muted-1">
+                <StatNumber size="xs" className="text-muted-1">
+                  +{todayPoints}
+                </StatNumber>{' '}
+                Pkt
+              </span>
+            )}
           </div>
         </div>
         <div className="mb-3 flex flex-wrap gap-3">
           {Array.from(byCategoryToday.values()).map(({ label, count }) => (
-            <span key={label} className="text-xs text-muted-1">
-              <span className="font-mono font-semibold text-foreground">{count}</span> {label}
+            <span key={label} className="text-sm text-muted-1">
+              <StatNumber size="sm" className="text-foreground">
+                {count}
+              </StatNumber>{' '}
+              {label}
             </span>
           ))}
-          {byCategoryToday.size === 0 && <span className="text-xs text-muted-2">Noch nichts geloggt.</span>}
+          {byCategoryToday.size === 0 && (
+            <span className="text-sm text-muted-1">Noch nichts eingetragen.</span>
+          )}
         </div>
-        <p className="inline-flex items-center gap-1.5 rounded-full bg-accent-lime/10 px-3 py-1 text-xs font-semibold text-accent-lime">
-          {getDrinkComment(todayTotal)}
+        <p
+          className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${
+            drinkWindow.open ? 'bg-member/10 text-member' : 'bg-white/[0.04] text-muted-1'
+          }`}
+        >
+          {drinkWindow.open
+            ? getDrinkComment(todayTotal)
+            : `Tagsüber gibt's keine Punkte. Prost ab ${opensAtLabel}.`}
         </p>
       </Card>
 
       <div>
-        <p className="mb-2 text-sm font-bold text-foreground">Getränk hinzufügen</p>
-        <DrinkCounterGrid categories={categories} />
+        <h2 className="mb-2 text-sm font-bold text-foreground">Getränk eintragen</h2>
+        <DrinkCounterGrid
+          categories={categories}
+          opensAtMs={drinkWindow.opensAt.getTime()}
+          initiallyLocked={!drinkWindow.open}
+          opensAtLabel={opensAtLabel}
+        />
       </div>
 
       <Card>
-        <p className="mb-3 text-sm font-bold text-foreground">Heute geloggt</p>
+        <h2 className="mb-3 text-sm font-bold text-foreground">Heute eingetragen</h2>
         <DrinkLogList entries={todayEntries} />
       </Card>
 
       <Card>
-        <p className="mb-3 text-sm font-bold text-foreground">Verlauf</p>
+        <h2 className="mb-3 text-sm font-bold text-foreground">Verlauf</h2>
         <DrinkHistoryChart days={chartDays} />
       </Card>
 

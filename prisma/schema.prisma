@@ -33,19 +33,16 @@ enum MemberRole {
 }
 
 model Member {
-  id            String     @id @default(cuid())
-  tripId        String
-  trip          Trip       @relation(fields: [tripId], references: [id])
-  name          String
-  avatar        String
-  pinHash       String
-  role          MemberRole @default(MEMBER)
-  points        Int        @default(0)
-  level         Int        @default(1)
-  currentStreak Int        @default(0)
-  longestStreak Int        @default(0)
-  lastActiveDay DateTime?
-  createdAt     DateTime   @default(now())
+  id        String     @id @default(cuid())
+  tripId    String
+  trip      Trip       @relation(fields: [tripId], references: [id])
+  name      String
+  avatar    String
+  pinHash   String
+  role      MemberRole @default(MEMBER)
+  points    Int        @default(0)
+  level     Int        @default(1)
+  createdAt DateTime   @default(now())
 
   drinkEntries         DrinkEntry[]
   penaltiesReceived    PenaltyEntry[]        @relation("Target")
@@ -247,7 +244,6 @@ model AwardVote {
 
 enum PointsSource {
   CHALLENGE
-  STREAK
   DRINK_RANKING
   PLAN_ITEM
   PENALTY

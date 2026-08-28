@@ -1,7 +1,10 @@
 import { z } from 'zod'
 
+// Lime ist die Systemfarbe (Platz 1, aktiver Nav-Zustand, positive Punkte) und steht
+// deshalb bewusst NICHT zur Wahl — sonst waere ein Lime-Mitglied nicht von diesen
+// Systemzustaenden zu unterscheiden. AVATAR_HEX kennt Lime weiterhin, damit Altdaten
+// nicht brechen.
 export const AVATAR_COLORS = [
-  'lime',
   'violet',
   'blue',
   'pink',
@@ -32,12 +35,18 @@ const pinSchema = z
   .trim()
   .regex(/^\d{4}$/, 'PIN muss genau 4 Ziffern haben')
 
-export const joinTripSchema = z.object({
-  tripCode: tripCodeSchema,
-  name: nameSchema,
-  avatar: z.enum(AVATAR_COLORS),
-  pin: pinSchema,
-})
+export const joinTripSchema = z
+  .object({
+    tripCode: tripCodeSchema,
+    name: nameSchema,
+    avatar: z.enum(AVATAR_COLORS),
+    pin: pinSchema,
+    pinConfirm: pinSchema,
+  })
+  .refine((data) => data.pin === data.pinConfirm, {
+    message: 'Die beiden PINs sind nicht gleich',
+    path: ['pinConfirm'],
+  })
 
 export const loginSchema = z.object({
   tripCode: tripCodeSchema,

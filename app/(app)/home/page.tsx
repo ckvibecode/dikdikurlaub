@@ -5,12 +5,12 @@ import { getTripDayKey } from '@/lib/dates'
 import { Card } from '@/components/ui/Card'
 import { PillBadge } from '@/components/ui/PillBadge'
 import { StatNumber } from '@/components/ui/StatNumber'
-import { WarningIcon, CupIcon } from '@/components/icons'
 import { ParticipationToggle } from '@/components/plan/ParticipationToggle'
 import { PenaltyFeedItem, type PenaltyFeedEntry } from '@/components/strafen/PenaltyFeedItem'
 import { getAvatarHex } from '@/lib/avatar'
 
-const HOME_PLAN_ITEM_LIMIT = 5
+const HOME_PLAN_ITEM_LIMIT = 2
+const LEADERBOARD_PREVIEW_LIMIT = 4
 
 const dayLabelFormatter = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit' })
 
@@ -18,11 +18,10 @@ export default async function HomePage() {
   const member = await getSessionMember()
   if (!member) return null
 
-  const [topMembers, drinksToday, planItems, pendingPenalties] = await Promise.all([
+  const [allMembers, drinksToday, planItems, pendingPenalties] = await Promise.all([
     prisma.member.findMany({
       where: { tripId: member.tripId },
-      orderBy: { points: 'desc' },
-      take: 3,
+      orderBy: [{ points: 'desc' }, { createdAt: 'asc' }],
     }),
     prisma.drinkEntry.findMany({
       where: { tripId: member.tripId, memberId: member.id },
@@ -43,6 +42,15 @@ export default async function HomePage() {
       include: { penaltyType: true, target: true, proposedBy: true },
     }),
   ])
+
+  // Bei Punktgleichstand gibt es keinen Ersten: sonst kroent die Sortierung willkuerlich.
+  const topPoints = allMembers[0]?.points ?? 0
+  const leaderIsUnique = topPoints > 0 && allMembers.filter((m) => m.points === topPoints).length === 1
+
+  const myRank = allMembers.findIndex((m) => m.id === member.id) + 1
+  const preview = allMembers.slice(0, LEADERBOARD_PREVIEW_LIMIT)
+  const meInPreview = preview.some((m) => m.id === member.id)
+  const rows = meInPreview ? preview : [...preview.slice(0, LEADERBOARD_PREVIEW_LIMIT - 1), member]
 
   const visiblePlanItems = planItems.slice(0, HOME_PLAN_ITEM_LIMIT)
   const hasMorePlanItems = planItems.length > HOME_PLAN_ITEM_LIMIT
@@ -73,200 +81,142 @@ export default async function HomePage() {
 
   return (
     <div className="relative flex flex-col gap-4 px-4.5 pb-6 pt-5.5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className="relative flex h-13 w-13 items-center justify-center rounded-full"
-            style={{ backgroundColor: 'var(--color-surface)', border: `2px solid ${avatarHex}`, boxShadow: `0 0 18px ${avatarHex}59` }}
+      {/* Kopfzeile */}
+      <div className="animate-rise-in flex items-center gap-3">
+        <div
+          className="bloom relative flex h-13 w-13 shrink-0 items-center justify-center rounded-full border-2 bg-surface"
+          style={{ borderColor: avatarHex }}
+        >
+          <span className="text-lg font-bold" style={{ color: avatarHex }}>
+            {member.name.charAt(0).toUpperCase()}
+          </span>
+          <span
+            className="absolute -right-2.5 -top-2 flex h-7 w-7 -rotate-[10deg] items-center justify-center rounded-blob border-2 border-background"
+            style={{ backgroundColor: avatarHex }}
           >
-            <span className="font-mono text-lg font-semibold" style={{ color: avatarHex }}>
-              {member.name.charAt(0).toUpperCase()}
-            </span>
-            <div
-              className="absolute -right-2.5 -top-2 flex h-7 w-7 -rotate-[10deg] items-center justify-center rounded-[40%_60%_55%_45%/55%_45%_60%_40%] border-2 border-background"
-              style={{ backgroundColor: avatarHex }}
-            >
-              <span className="font-mono text-[10px] font-bold text-background">
-                {String(member.level).padStart(2, '0')}
-              </span>
-            </div>
-          </div>
-          <div>
-            <h1 className="text-base font-bold text-foreground">Hey, {member.name}!</h1>
-            <p className="mt-0.5 text-xs font-medium text-muted-1">
-              Level {member.level} &middot; {member.trip.name}
-            </p>
-          </div>
+            <StatNumber size="xs" className="font-bold text-background">
+              {member.level}
+            </StatNumber>
+          </span>
         </div>
-        <PillBadge tone="violet" rotate="right">
-          Punkte: {member.points}
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-lg font-bold text-foreground">Hey, {member.name}!</h1>
+          <p className="mt-0.5 truncate text-sm text-muted-1">{member.trip.name}</p>
+        </div>
+        <PillBadge tone="member" rotate="right">
+          <StatNumber size="sm">{member.points}</StatNumber> Pkt
         </PillBadge>
       </div>
 
-      {/* Streak */}
-      <Card>
-        <div className="mb-2.5 flex items-center gap-2">
-          <span className="text-accent-lime" style={{ filter: 'drop-shadow(0 0 5px rgba(200,255,77,0.6))' }}>
-            <svg viewBox="0 0 20 20" width={18} height={18} fill="currentColor" stroke="currentColor" strokeWidth={0.5}>
-              <path d="M10 2.5c1.2 3-2.8 4.2-2.8 7.2a2.8 2.8 0 0 0 5.6 0c0-1-.4-1.8-.9-1.9.4 1.8-1 2.6-1.8.9-.6-1.2 0-2.7 0-2.7-1.9 1-2.9 2.9-2.9 4.6a3.9 3.9 0 0 0 7.8 0c0-3.7-2.8-4.8-5-8.1Z" />
-            </svg>
+      {/* Rangliste — der Held des Screens */}
+      <Card className="animate-rise-in p-4" style={{ animationDelay: '70ms' }}>
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="text-base font-bold text-foreground">Rangliste</h2>
+          <span className="text-sm text-muted-1">
+            Du auf Platz <StatNumber size="sm" className="text-foreground">{myRank}</StatNumber> von{' '}
+            <StatNumber size="sm" className="text-foreground">{allMembers.length}</StatNumber>
           </span>
-          <span className="text-sm font-bold text-foreground">{member.currentStreak}-Tage-Streak</span>
-          <span className="ml-auto font-mono text-xs text-muted-2">Beste: {member.longestStreak}</span>
         </div>
-        <div className="flex items-end gap-1.5">
-          {Array.from({ length: 7 }).map((_, i) => {
-            const filled = i < member.currentStreak
-            return (
-              <div
-                key={i}
-                className="flex-1 rounded-full bg-accent-lime"
-                style={{
-                  height: filled ? 20 - i : 14,
-                  opacity: filled ? Math.max(0.7, 1 - i * 0.08) : 0.09,
-                  backgroundColor: filled ? undefined : 'rgba(255,255,255,0.09)',
-                }}
-              />
-            )
-          })}
-        </div>
-      </Card>
-
-      {/* Leaderboard preview */}
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-bold text-foreground">Rangliste</span>
-          <Link href="/leaderboard" className="text-xs font-semibold text-muted-2">
-            Alle ansehen &rarr;
-          </Link>
-        </div>
-        <div className="flex flex-col gap-2">
-          {topMembers.map((m, i) => {
+        <div className="flex flex-col gap-1.5">
+          {rows.map((m) => {
+            const rank = allMembers.findIndex((x) => x.id === m.id) + 1
             const isMe = m.id === member.id
+            const isLeader = rank === 1 && leaderIsUnique
+            const hex = getAvatarHex(m.avatar)
             return (
               <div
                 key={m.id}
-                className={`flex items-center gap-3 rounded-2xl px-2.5 py-2 ${
-                  i === 0 ? 'bg-accent-lime/7' : isMe ? 'bg-accent-violet/10' : ''
-                }`}
+                className="flex items-center gap-3 rounded-2xl px-2.5 py-2"
+                style={isMe ? { backgroundColor: `${hex}1f` } : undefined}
               >
-                <div
-                  className={`flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
-                    i === 0 ? '-rotate-6 rounded-[40%_60%_55%_45%/55%_45%_60%_40%] text-background' : 'bg-[#1c2029] text-muted-1'
+                {/* Rang 1 wird durch Groesse, Blob-Form und Bloom markiert, nicht durch eine
+                    zweite Farbe: der Farbton gehoert der Person. */}
+                <span
+                  className={`flex shrink-0 items-center justify-center ${
+                    isLeader ? 'bloom h-11 w-11 rounded-blob -rotate-6' : 'h-9 w-9 rounded-full'
                   }`}
-                  style={i === 0 ? { backgroundColor: '#c8ff4d', boxShadow: '0 0 12px rgba(200,255,77,0.5)' } : isMe ? { backgroundColor: '#7a6ff0', color: '#0a0c10' } : undefined}
+                  style={{ backgroundColor: hex, '--bloom-color': hex } as React.CSSProperties}
                 >
-                  {i + 1}
-                </div>
-                <span className={`flex-1 text-sm font-semibold ${isMe ? 'text-[#a99cff]' : 'text-foreground'}`}>
+                  <StatNumber size={isLeader ? 'md' : 'sm'} className="font-bold text-background">
+                    {rank}
+                  </StatNumber>
+                </span>
+                <span className="flex-1 truncate text-sm font-semibold text-foreground">
                   {isMe ? `Du (${m.name})` : m.name}
                 </span>
-                <StatNumber size="sm" className={i === 0 ? 'text-accent-lime' : isMe ? 'text-[#a99cff]' : 'text-muted-1'}>
+                <StatNumber size="md" className="shrink-0 text-foreground">
                   {m.points}
                 </StatNumber>
               </div>
             )
           })}
-          {topMembers.length === 0 && (
-            <p className="text-sm text-muted-2">Noch keine Punkte vergeben &ndash; legt los!</p>
-          )}
         </div>
-      </Card>
-
-      {/* Drinks widget */}
-      <Card>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm font-bold text-foreground">Getränke heute</span>
-          <StatNumber size="xl" className="text-accent-lime" style={{ textShadow: '0 0 10px rgba(200,255,77,0.4)' }}>
-            {drinksTodayCount}
-          </StatNumber>
-        </div>
-        <Link href="/drinks" className="text-xs font-semibold text-muted-2">
-          Details &amp; Getränk hinzufügen &rarr;
+        <Link
+          href="/leaderboard"
+          className="mt-2 flex min-h-11 items-center text-sm font-semibold text-muted-1"
+        >
+          Ganze Rangliste &rarr;
         </Link>
       </Card>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <Link
-          href="/strafen"
-          className="flex flex-col items-center gap-1.5 rounded-[20px] border border-white/[0.06] bg-surface px-2 py-3.5"
-        >
-          <span className="flex h-8.5 w-8.5 items-center justify-center rounded-[45%_55%_60%_40%/55%_45%_55%_45%] bg-accent-lime/14 text-accent-lime">
-            <WarningIcon className="h-4.5 w-4.5" />
-          </span>
-          <span className="text-center text-[11px] font-semibold text-foreground">Strafe eintragen</span>
-        </Link>
-        <Link
-          href="/drinks"
-          className="flex flex-col items-center gap-1.5 rounded-[20px] border border-white/[0.06] bg-surface px-2 py-3.5"
-        >
-          <span className="flex h-8.5 w-8.5 items-center justify-center rounded-[55%_45%_40%_60%/45%_55%_45%_55%] bg-accent-violet/16 text-[#a99cff]">
-            <CupIcon className="h-4.5 w-4.5" />
-          </span>
-          <span className="text-center text-[11px] font-semibold text-foreground">Getränk +1</span>
-        </Link>
-      </div>
-
-      {/* Tagesplan overview */}
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-bold text-foreground">Tagesplan</span>
-          <Link href="/plan" className="text-xs font-semibold text-muted-2">
-            Alle ansehen &rarr;
+      {/* Statuszeile: drei persoenliche Zahlen, eine Zeile, kein Glow */}
+      <Card className="animate-rise-in p-4" style={{ animationDelay: '140ms' }}>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/drinks" className="flex min-h-11 flex-col justify-center">
+            <StatNumber size="lg" className="text-member">
+              {drinksTodayCount}
+            </StatNumber>
+            <span className="mt-0.5 text-sm text-muted-1">Drinks heute</span>
           </Link>
+          <div className="flex min-h-11 flex-col justify-center">
+            <StatNumber size="lg" className="text-member">
+              {member.level}
+            </StatNumber>
+            <span className="mt-0.5 text-sm text-muted-1">Level</span>
+          </div>
         </div>
-        <div className="flex flex-col gap-3">
+      </Card>
+
+      {/* Offene Strafen — nur wenn es welche gibt */}
+      {pendingPenaltyEntries.length > 0 && (
+        <div className="animate-rise-in flex flex-col gap-2.5" style={{ animationDelay: '210ms' }}>
+          <h2 className="px-0.5 text-base font-bold text-foreground">Deine offenen Strafen</h2>
+          {pendingPenaltyEntries.map((entry) => (
+            <PenaltyFeedItem key={entry.id} entry={entry} />
+          ))}
+        </div>
+      )}
+
+      {/* Tagesplan — auf die naechsten zwei gekuerzt */}
+      <Card className="animate-rise-in p-4" style={{ animationDelay: '280ms' }}>
+        <h2 className="mb-3 text-base font-bold text-foreground">Als Nächstes</h2>
+        <div className="flex flex-col gap-3.5">
           {visiblePlanItems.map((item) => (
             <div key={item.id} className="flex items-center gap-3">
-              <div className="flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-[11px] text-muted-2">
-                    {dayLabelFormatter.format(item.day)}
-                    {item.startTime ? ` · ${item.startTime}${item.endTime ? `–${item.endTime}` : ''}` : ''}
-                  </span>
-                  {item.points > 0 && <span className="font-mono text-[10px] text-accent-lime">+{item.points} Pkt</span>}
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-semibold text-foreground">{item.title}</span>
-                  <span className="text-[11px] text-muted-2">{item.completions.length} dabei</span>
-                </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
+                <p className="mt-0.5 text-sm text-muted-1">
+                  {dayLabelFormatter.format(item.day)}
+                  {item.startTime ? ` · ${item.startTime}${item.endTime ? `–${item.endTime}` : ''}` : ''}
+                  {item.completions.length > 0 ? ` · ${item.completions.length} dabei` : ''}
+                  {item.points > 0 ? ` · +${item.points} Pkt` : ''}
+                </p>
               </div>
               <ParticipationToggle
                 planItemId={item.id}
                 joined={item.completions.some((c) => c.memberId === member.id)}
+                itemTitle={item.title}
               />
             </div>
           ))}
           {visiblePlanItems.length === 0 && (
-            <p className="text-sm text-muted-2">Noch keine Programmpunkte &ndash; legt den ersten im Tagesplan an.</p>
-          )}
-          {hasMorePlanItems && (
-            <Link href="/plan" className="text-xs font-semibold text-muted-2">
-              + weitere Programmpunkte &rarr;
-            </Link>
+            <p className="text-sm text-muted-1">Noch nichts geplant &ndash; legt den ersten Punkt im Plan an.</p>
           )}
         </div>
+        <Link href="/plan" className="mt-2 flex min-h-11 items-center text-sm font-semibold text-muted-1">
+          {hasMorePlanItems ? 'Ganzer Tagesplan' : 'Zum Tagesplan'} &rarr;
+        </Link>
       </Card>
-
-      {/* My pending penalties */}
-      <div className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between px-0.5">
-          <span className="text-sm font-bold text-foreground">Meine offenen Strafen</span>
-          <Link href="/strafen" className="text-xs font-semibold text-muted-2">
-            Zum Katalog &rarr;
-          </Link>
-        </div>
-        {pendingPenaltyEntries.map((entry) => (
-          <PenaltyFeedItem key={entry.id} entry={entry} />
-        ))}
-        {pendingPenaltyEntries.length === 0 && (
-          <Card>
-            <p className="text-sm text-muted-2">Aktuell nichts offen &ndash; sauber geblieben.</p>
-          </Card>
-        )}
-      </div>
     </div>
   )
 }

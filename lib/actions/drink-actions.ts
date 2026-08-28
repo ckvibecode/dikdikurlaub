@@ -4,10 +4,21 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { getSessionMember } from '@/lib/auth'
 import { applyPoints } from '@/lib/gamification'
+import { getDrinkWindow, DRINK_TRACKING_START_HOUR } from '@/lib/drink-window'
 
-export async function logDrink(categoryId: string) {
+export interface LogDrinkResult {
+  error?: string
+}
+
+export async function logDrink(categoryId: string): Promise<LogDrinkResult> {
   const member = await getSessionMember()
   if (!member) throw new Error('Nicht eingeloggt')
+
+  // Autoritative Prüfung: die UI sperrt sich zwar selbst, aber die Action ist die
+  // einzige Stelle, die nicht umgangen werden kann.
+  if (!getDrinkWindow().open) {
+    return { error: `Getränke zählen erst ab ${DRINK_TRACKING_START_HOUR}:00.` }
+  }
 
   const category = await prisma.drinkCategory.findFirst({
     where: { id: categoryId, tripId: member.tripId, isActive: true },
@@ -32,6 +43,7 @@ export async function logDrink(categoryId: string) {
   revalidatePath('/home')
   revalidatePath('/drinks')
   revalidatePath('/leaderboard')
+  return {}
 }
 
 export async function deleteDrink(drinkEntryId: string) {

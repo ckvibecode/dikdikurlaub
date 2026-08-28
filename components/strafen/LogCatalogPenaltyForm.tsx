@@ -22,7 +22,7 @@ export function LogCatalogPenaltyForm({
         name="targetMemberId"
         required
         defaultValue=""
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       >
         <option value="" disabled>
           Wer war&apos;s?
@@ -37,7 +37,7 @@ export function LogCatalogPenaltyForm({
         name="penaltyTypeId"
         required
         defaultValue=""
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       >
         <option value="" disabled>
           Welche Strafe?
@@ -49,7 +49,7 @@ export function LogCatalogPenaltyForm({
           </option>
         ))}
       </select>
-      {state?.error && <p className="text-sm text-[#ff6f6f]">{state.error}</p>}
+      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
       <Button type="submit" disabled={pending}>
         {pending ? 'Eintragen...' : 'Eintragen'}
       </Button>

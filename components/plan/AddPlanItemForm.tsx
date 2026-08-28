@@ -16,7 +16,7 @@ export function AddPlanItemForm({ defaultDay }: { defaultDay: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 px-4 py-3.5 text-sm font-semibold text-muted-1 transition-colors hover:border-accent-lime/40 hover:text-accent-lime"
+        className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 px-4 py-3.5 text-sm font-semibold text-muted-1 transition-colors hover:border-member/40 hover:text-member"
       >
         <PlusIcon className="h-4 w-4" />
         Programmpunkt hinzufügen
@@ -31,7 +31,7 @@ export function AddPlanItemForm({ defaultDay }: { defaultDay: string }) {
         name="day"
         defaultValue={defaultDay}
         required
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       />
       <div className="flex gap-2">
         <label className="flex-1">
@@ -39,7 +39,7 @@ export function AddPlanItemForm({ defaultDay }: { defaultDay: string }) {
           <input
             type="time"
             name="startTime"
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
           />
         </label>
         <label className="flex-1">
@@ -47,7 +47,7 @@ export function AddPlanItemForm({ defaultDay }: { defaultDay: string }) {
           <input
             type="time"
             name="endTime"
-            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
           />
         </label>
       </div>
@@ -56,13 +56,13 @@ export function AddPlanItemForm({ defaultDay }: { defaultDay: string }) {
         name="title"
         placeholder="Was steht an?"
         required
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       />
       <input
         type="text"
         name="description"
         placeholder="Details (optional)"
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       />
       <label>
         <span className="mb-1 block text-[11px] font-medium text-muted-2">Punkte bei Teilnahme (optional)</span>
@@ -72,10 +72,10 @@ export function AddPlanItemForm({ defaultDay }: { defaultDay: string }) {
           min={0}
           max={50}
           defaultValue={0}
-          className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+          className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
         />
       </label>
-      {state?.error && <p className="text-sm text-[#ff6f6f]">{state.error}</p>}
+      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={pending} className="flex-1">
           {pending ? 'Speichern...' : 'Hinzufügen'}

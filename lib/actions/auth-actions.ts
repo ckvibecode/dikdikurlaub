@@ -5,40 +5,74 @@ import { Prisma } from '../../generated/prisma/client.ts'
 import { prisma } from '@/lib/db'
 import { getSession, hashPin, verifyPin, isRateLimited, recordFailedAttempt, clearAttempts } from '@/lib/auth'
 import { joinTripSchema, loginSchema } from '@/lib/validations'
+import type { z } from 'zod'
 
 export interface ActionState {
   error?: string
+  fieldErrors?: Record<string, string>
+  /**
+   * React 19 leert das Formular nach jeder Action. Damit ein Fehler nicht die
+   * ganze Eingabe vernichtet, spiegeln wir die unkritischen Felder zurueck.
+   * PINs bleiben bewusst draussen und werden neu eingegeben.
+   */
+  values?: { tripCode?: string; name?: string }
+}
+
+function toFieldErrors(error: z.ZodError): Record<string, string> {
+  const fieldErrors: Record<string, string> = {}
+  for (const issue of error.issues) {
+    const field = issue.path[0]
+    if (typeof field === 'string' && !fieldErrors[field]) {
+      fieldErrors[field] = issue.message
+    }
+  }
+  return fieldErrors
 }
 
 export async function joinTrip(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const values = {
+    tripCode: String(formData.get('tripCode') ?? ''),
+    name: String(formData.get('name') ?? ''),
+  }
+
   const parsed = joinTripSchema.safeParse({
     tripCode: formData.get('tripCode'),
     name: formData.get('name'),
     avatar: formData.get('avatar'),
     pin: formData.get('pin'),
+    pinConfirm: formData.get('pinConfirm'),
   })
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Ungültige Eingabe' }
+    return { fieldErrors: toFieldErrors(parsed.error), values }
   }
 
   const { tripCode, name, avatar, pin } = parsed.data
 
   const trip = await prisma.trip.findUnique({ where: { code: tripCode } })
   if (!trip) {
-    return { error: 'Trip-Code nicht gefunden' }
+    return {
+      fieldErrors: { tripCode: 'Diesen Trip-Code gibt es nicht. Frag nochmal in der Gruppe nach.' },
+      values,
+    }
   }
 
   const existing = await prisma.member.findUnique({
     where: { tripId_name: { tripId: trip.id, name } },
   })
   if (existing) {
-    return { error: 'Dieser Name ist in diesem Trip schon vergeben. Nutze "Einloggen" stattdessen.' }
+    return {
+      fieldErrors: { name: 'Diesen Namen gibt es hier schon. Nimm einen anderen – oder log dich unten ein.' },
+      values,
+    }
   }
 
   const avatarTaken = await prisma.member.findFirst({ where: { tripId: trip.id, avatar } })
   if (avatarTaken) {
-    return { error: 'Diese Avatar-Farbe ist gerade eben von jemand anderem gewählt worden. Bitte eine andere wählen.' }
+    return {
+      fieldErrors: { avatar: 'Die Farbe war jemand anderes schneller. Such dir eine andere aus.' },
+      values,
+    }
   }
 
   const memberCount = await prisma.member.count({ where: { tripId: trip.id } })
@@ -57,7 +91,10 @@ export async function joinTrip(_prevState: ActionState, formData: FormData): Pro
     })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      return { error: 'Name oder Avatar-Farbe wurden gerade eben vergeben. Bitte Seite neu laden und erneut versuchen.' }
+      return {
+        error: 'Name oder Avatar-Farbe wurden gerade eben vergeben. Bitte Seite neu laden und erneut versuchen.',
+        values,
+      }
     }
     throw err
   }
@@ -71,6 +108,11 @@ export async function joinTrip(_prevState: ActionState, formData: FormData): Pro
 }
 
 export async function login(_prevState: ActionState, formData: FormData): Promise<ActionState> {
+  const values = {
+    tripCode: String(formData.get('tripCode') ?? ''),
+    name: String(formData.get('name') ?? ''),
+  }
+
   const parsed = loginSchema.safeParse({
     tripCode: formData.get('tripCode'),
     name: formData.get('name'),
@@ -78,17 +120,18 @@ export async function login(_prevState: ActionState, formData: FormData): Promis
   })
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Ungültige Eingabe' }
+    return { fieldErrors: toFieldErrors(parsed.error), values }
   }
 
   const { tripCode, name, pin } = parsed.data
   const rateLimitKey = `${tripCode}:${name}`
 
   if (isRateLimited(rateLimitKey)) {
-    return { error: 'Zu viele Fehlversuche. Bitte warte ein paar Minuten und versuch es erneut.' }
+    return { error: 'Zu viele Fehlversuche. Bitte warte ein paar Minuten und versuch es erneut.', values }
   }
 
-  const genericError = { error: 'Trip-Code, Name oder PIN falsch.' }
+  // Bewusst unspezifisch: sonst verraet die Fehlermeldung, welche Namen es im Trip gibt.
+  const genericError = { error: 'Trip-Code, Name oder PIN falsch.', values }
 
   const trip = await prisma.trip.findUnique({ where: { code: tripCode } })
   if (!trip) {

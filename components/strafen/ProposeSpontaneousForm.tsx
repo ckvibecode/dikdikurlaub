@@ -35,7 +35,7 @@ export function ProposeSpontaneousForm({ members }: { members: Array<{ id: strin
         name="targetMemberId"
         required
         defaultValue=""
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       >
         <option value="" disabled>
           Wer war&apos;s?
@@ -51,14 +51,14 @@ export function ProposeSpontaneousForm({ members }: { members: Array<{ id: strin
         name="freeTitle"
         placeholder="Was ist passiert?"
         required
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       />
       <input
         type="text"
         name="freeConsequence"
         placeholder="Vorgeschlagene Strafe"
         required
-        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
       />
       <label>
         <span className="mb-1 block text-[11px] font-medium text-muted-2">Minuspunkte (optional)</span>
@@ -68,10 +68,10 @@ export function ProposeSpontaneousForm({ members }: { members: Array<{ id: strin
           min={0}
           max={50}
           defaultValue={0}
-          className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-accent-lime/60"
+          className="w-24 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm outline-none focus:border-member/60"
         />
       </label>
-      {state?.error && <p className="text-sm text-[#ff6f6f]">{state.error}</p>}
+      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={pending} className="flex-1">
           {pending ? 'Vorschlagen...' : 'Zur Abstimmung stellen'}
