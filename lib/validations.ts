@@ -4,16 +4,36 @@ import { z } from 'zod'
 // deshalb bewusst NICHT zur Wahl — sonst waere ein Lime-Mitglied nicht von diesen
 // Systemzustaenden zu unterscheiden. AVATAR_HEX kennt Lime weiterhin, damit Altdaten
 // nicht brechen.
+//
+// Jede Farbe kann im Trip nur einmal vergeben werden (@@unique([tripId, avatar])),
+// die Palette begrenzt also die Gruppengroesse. Reihenfolge = Anzeigereihenfolge im
+// Join-Formular: nach Farbton sortiert, damit das Raster wie ein Farbkreis wirkt.
 export const AVATAR_COLORS = [
-  'violet',
-  'blue',
-  'pink',
-  'orange',
   'red',
-  'teal',
+  'crimson',
+  'rose',
+  'orange',
+  'rust',
+  'peach',
   'gold',
-  'purple',
+  'butter',
+  'grass',
+  'sage',
   'mint',
+  'emerald',
+  'teal',
+  'ice',
+  'cyan',
+  'blue',
+  'ocean',
+  'sky',
+  'violet',
+  'lavender',
+  'purple',
+  'plum',
+  'magenta',
+  'pink',
+  'blush',
 ] as const
 export type AvatarColor = (typeof AVATAR_COLORS)[number]
 

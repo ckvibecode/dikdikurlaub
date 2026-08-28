@@ -57,9 +57,18 @@ export function JoinForm({ takenAvatars }: { takenAvatars: string[] }) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span id="avatar-label" className="text-sm font-medium text-muted-1">
-          Avatar-Farbe
-        </span>
+        <div className="flex items-baseline justify-between gap-2">
+          <span id="avatar-label" className="text-sm font-medium text-muted-1">
+            Avatar-Farbe
+          </span>
+          {/* Die Palette ist gross und enthaelt aehnliche Toene -- der Name ist die einzige
+              eindeutige Rueckmeldung, welcher Punkt gerade ausgewaehlt ist. */}
+          {avatar && (
+            <span className="text-xs font-semibold" style={{ color: AVATAR_HEX[avatar] }}>
+              {AVATAR_LABELS[avatar] ?? avatar}
+            </span>
+          )}
+        </div>
         {availableColors.length > 0 ? (
           <div
             role="group"
@@ -90,7 +99,10 @@ export function JoinForm({ takenAvatars }: { takenAvatars: string[] }) {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted-1">Alle Avatar-Farben sind schon vergeben.</p>
+          <p className="text-sm text-muted-1">
+            Alle Avatar-Farben sind schon vergeben. Ein Admin kann im Admin-Bereich eine Farbe
+            freigeben.
+          </p>
         )}
         <FieldError id="avatar-error" message={errors.avatar} />
         <input type="hidden" name="avatar" value={avatar} />

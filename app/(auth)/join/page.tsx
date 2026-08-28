@@ -4,6 +4,15 @@ import { Card } from '@/components/ui/Card'
 import { JoinForm } from '@/components/auth/JoinForm'
 import { AuthBrand } from '@/components/auth/AuthBrand'
 
+/**
+ * Die Seite nutzt sonst keine dynamische API (kein cookies()/headers()) und wuerde
+ * deshalb beim Build vorgerendert. Die Liste der schon vergebenen Farben waere dann
+ * auf dem Stand des letzten Deploys eingefroren: neue Mitglieder saehen weiterhin
+ * belegte Farben und wuerden beim Absenden abgewiesen. Erzwungen dynamisch, damit
+ * wirklich nur die aktuell freien Farben zur Auswahl stehen.
+ */
+export const dynamic = 'force-dynamic'
+
 export default async function JoinPage() {
   const trip = await prisma.trip.findFirst({ select: { members: { select: { avatar: true } } } })
   const takenAvatars = trip?.members.map((m) => m.avatar) ?? []
