@@ -8,7 +8,6 @@ import { StatNumber } from '@/components/ui/StatNumber'
 import { DrinkCounterGrid } from '@/components/drinks/DrinkCounterGrid'
 import { DrinkHistoryChart } from '@/components/drinks/DrinkHistoryChart'
 import { DrinkLogList, type DrinkLogEntry } from '@/components/drinks/DrinkLogList'
-import { DrinkCategoryAdmin } from '@/components/drinks/DrinkCategoryAdmin'
 
 const timeFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TRIP_TZ })
 
@@ -84,8 +83,6 @@ export default async function DrinksPage() {
     isToday: key === today,
   }))
 
-  const customCategories = categories.filter((c) => !c.isDefault)
-
   const drinkWindow = getDrinkWindow()
   const opensAtLabel = timeFormatter.format(drinkWindow.opensAt)
 
@@ -147,16 +144,14 @@ export default async function DrinksPage() {
       </div>
 
       <Card>
-        <h2 className="mb-3 text-sm font-bold text-foreground">Heute eingetragen</h2>
-        <DrinkLogList entries={todayEntries} />
-      </Card>
-
-      <Card>
         <h2 className="mb-3 text-sm font-bold text-foreground">Verlauf</h2>
         <DrinkHistoryChart days={chartDays} />
       </Card>
 
-      {member.role === 'ADMIN' && <DrinkCategoryAdmin customCategories={customCategories} />}
+      <Card>
+        <h2 className="mb-3 text-sm font-bold text-foreground">Heute eingetragen</h2>
+        <DrinkLogList entries={todayEntries} />
+      </Card>
     </div>
   )
 }

@@ -2,6 +2,8 @@ import { getSessionMember } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { Card } from '@/components/ui/Card'
 import { StatNumber } from '@/components/ui/StatNumber'
+import { RankTitleBadge } from '@/components/ui/RankTitleBadge'
+import { getRankTitles } from '@/lib/titles'
 import { getAvatarHex } from '@/lib/avatar'
 
 export default async function LeaderboardPage() {
@@ -17,6 +19,8 @@ export default async function LeaderboardPage() {
   // willkuerlich jemanden.
   const topPoints = members[0]?.points ?? 0
   const leaderIsUnique = topPoints > 0 && members.filter((m) => m.points === topPoints).length === 1
+
+  const titles = getRankTitles(members)
 
   return (
     <div className="flex flex-col gap-4 px-4.5 pb-6 pt-5.5">
@@ -48,7 +52,11 @@ export default async function LeaderboardPage() {
                   <p className="truncate text-sm font-semibold text-foreground">
                     {isMe ? `Du (${m.name})` : m.name}
                   </p>
-                  <p className="text-sm text-muted-1">Level {m.level}</p>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-sm text-muted-1">Level {m.level}</span>
+                    {m.id === titles.firstId && <RankTitleBadge variant="first" />}
+                    {m.id === titles.lastId && <RankTitleBadge variant="last" />}
+                  </div>
                 </div>
                 <StatNumber size="md" className="shrink-0 text-foreground">
                   {m.points}

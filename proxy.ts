@@ -14,6 +14,7 @@ export async function proxy(request: NextRequest) {
     || request.nextUrl.pathname.startsWith('/drinks')
     || request.nextUrl.pathname.startsWith('/plan')
     || request.nextUrl.pathname.startsWith('/strafen')
+    || request.nextUrl.pathname.startsWith('/admin')
 
   if (isAppRoute && (!session.tripId || !session.memberId)) {
     return NextResponse.redirect(new URL('/join', request.url))
@@ -23,5 +24,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/home/:path*', '/leaderboard/:path*', '/drinks/:path*', '/plan/:path*', '/strafen/:path*'],
+  // /admin steht hier nur fuer den Cookie-Check. Ob jemand tatsaechlich Admin ist, entscheidet
+  // app/(app)/admin/layout.tsx -- und zwar mit 404 statt "kein Zugriff", damit die Route fuer
+  // alle anderen gar nicht erst zu existieren scheint.
+  matcher: ['/home/:path*', '/leaderboard/:path*', '/drinks/:path*', '/plan/:path*', '/strafen/:path*', '/admin/:path*'],
 }

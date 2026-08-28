@@ -189,10 +189,11 @@ export async function toggleFulfilled(entryId: string) {
   revalidatePath('/home')
 }
 
-/** Löscht einen Strafen-Eintrag. Admins dürfen jeden Eintrag entfernen (inkl. bereits
- * bestätigter, dann werden die vergebenen Minuspunkte zurückgenommen); wer selbst
- * vorgeschlagen hat, darf seinen eigenen Eintrag entfernen, solange er noch nicht bestätigt
- * ist (z.B. eine abgelehnte oder hängengebliebene Spontan-Strafe aufräumen). */
+/** Löscht einen Strafen-Eintrag: wer selbst vorgeschlagen hat, darf seinen eigenen Eintrag
+ * entfernen, solange er noch nicht bestätigt ist (z.B. eine abgelehnte oder hängengebliebene
+ * Spontan-Strafe aufräumen). Fremde oder bereits bestätigte Einträge räumt der Admin in der
+ * Verwaltung auf -- hier bewusst kein Sonderrecht, weil ein zusätzlicher Löschen-Button
+ * diesen Screen für den Admin sichtbar anders aussehen liesse. */
 export async function deletePenaltyEntry(entryId: string) {
   const member = await getSessionMember()
   if (!member) throw new Error('Nicht eingeloggt')
@@ -200,9 +201,8 @@ export async function deletePenaltyEntry(entryId: string) {
   const entry = await prisma.penaltyEntry.findFirst({ where: { id: entryId, tripId: member.tripId } })
   if (!entry) return
 
-  const isAdmin = member.role === 'ADMIN'
   const isOwnUnresolved = entry.proposedByMemberId === member.id && entry.status !== 'APPROVED'
-  if (!isAdmin && !isOwnUnresolved) throw new Error('Keine Berechtigung, diese Strafe zu löschen')
+  if (!isOwnUnresolved) throw new Error('Keine Berechtigung, diese Strafe zu löschen')
 
   await prisma.$transaction(async (tx) => {
     if (entry.status === 'APPROVED' && entry.points > 0) {
@@ -226,42 +226,4 @@ export async function deletePenaltyEntry(entryId: string) {
   revalidatePath('/strafen')
   revalidatePath('/home')
   revalidatePath('/leaderboard')
-}
-
-// ---- Admin: Strafenkatalog verwalten ----
-
-export async function addPenaltyType(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-  const member = await getSessionMember()
-  if (!member) return { error: 'Nicht eingeloggt' }
-  if (member.role !== 'ADMIN') return { error: 'Nur der Admin kann Katalog-Strafen anlegen' }
-
-  const title = String(formData.get('title') ?? '').trim()
-  const consequence = String(formData.get('consequence') ?? '').trim()
-  const pointsRaw = String(formData.get('points') ?? '0').trim()
-  const points = pointsRaw === '' ? 0 : Number(pointsRaw)
-
-  if (!title || !consequence) return { error: 'Titel und Konsequenz sind Pflichtfelder' }
-  if (!Number.isInteger(points) || points < 0 || points > 50) {
-    return { error: 'Minuspunkte müssen eine ganze Zahl zwischen 0 und 50 sein' }
-  }
-
-  await prisma.penaltyType.create({
-    data: { tripId: member.tripId, title, consequence, points, icon: 'default' },
-  })
-
-  revalidatePath('/strafen')
-  return {}
-}
-
-export async function deletePenaltyType(penaltyTypeId: string) {
-  const member = await getSessionMember()
-  if (!member) throw new Error('Nicht eingeloggt')
-  if (member.role !== 'ADMIN') throw new Error('Nur der Admin kann Katalog-Strafen entfernen')
-
-  await prisma.penaltyType.updateMany({
-    where: { id: penaltyTypeId, tripId: member.tripId },
-    data: { isActive: false },
-  })
-
-  revalidatePath('/strafen')
 }

@@ -7,6 +7,9 @@ import { PillBadge } from '@/components/ui/PillBadge'
 import { StatNumber } from '@/components/ui/StatNumber'
 import { PlanItemParticipation } from '@/components/plan/PlanItemParticipation'
 import { PenaltyFeedItem, type PenaltyFeedEntry } from '@/components/strafen/PenaltyFeedItem'
+import { GearIcon } from '@/components/icons'
+import { RankTitleBadge } from '@/components/ui/RankTitleBadge'
+import { getRankTitles } from '@/lib/titles'
 import { getAvatarHex } from '@/lib/avatar'
 
 const HOME_PLAN_ITEM_LIMIT = 2
@@ -46,6 +49,10 @@ export default async function HomePage() {
   // Bei Punktgleichstand gibt es keinen Ersten: sonst kroent die Sortierung willkuerlich.
   const topPoints = allMembers[0]?.points ?? 0
   const leaderIsUnique = topPoints > 0 && allMembers.filter((m) => m.points === topPoints).length === 1
+
+  // Aus der vollen Liste, nicht aus der gekuerzten Vorschau: sonst bekaeme der Vierte den
+  // Titel des Letzten, nur weil die Vorschau nach ihm abschneidet.
+  const titles = getRankTitles(allMembers)
 
   const myRank = allMembers.findIndex((m) => m.id === member.id) + 1
   const preview = allMembers.slice(0, LEADERBOARD_PREVIEW_LIMIT)
@@ -106,6 +113,19 @@ export default async function HomePage() {
         <PillBadge tone="member" rotate="right">
           <StatNumber size="sm">{member.points}</StatNumber> Pkt
         </PillBadge>
+        {/* Der einzige Weg in die Verwaltung. Serverseitig gerendert, also bekommen alle
+            anderen dieses Element gar nicht erst ausgeliefert -- und bewusst ein stummes
+            Zahnrad statt eines "Admin"-Buttons, damit auch ein Blick auf das Handy des
+            Admins die Rolle nicht verraet. */}
+        {member.role === 'ADMIN' && (
+          <Link
+            href="/admin"
+            aria-label="Verwaltung"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-3 transition-colors hover:bg-white/[0.06] hover:text-muted-1"
+          >
+            <GearIcon className="h-4.5 w-4.5" />
+          </Link>
+        )}
       </div>
 
       {/* Rangliste — der Held des Screens */}
@@ -141,8 +161,12 @@ export default async function HomePage() {
                     {rank}
                   </StatNumber>
                 </span>
-                <span className="flex-1 truncate text-sm font-semibold text-foreground">
-                  {isMe ? `Du (${m.name})` : m.name}
+                <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                  <span className="truncate text-sm font-semibold text-foreground">
+                    {isMe ? `Du (${m.name})` : m.name}
+                  </span>
+                  {m.id === titles.firstId && <RankTitleBadge variant="first" />}
+                  {m.id === titles.lastId && <RankTitleBadge variant="last" />}
                 </span>
                 <StatNumber size="md" className="shrink-0 text-foreground">
                   {m.points}

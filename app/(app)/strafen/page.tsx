@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/Card'
 import { LogCatalogPenaltyForm } from '@/components/strafen/LogCatalogPenaltyForm'
 import { ProposeSpontaneousForm } from '@/components/strafen/ProposeSpontaneousForm'
 import { PenaltyFeedItem, type PenaltyFeedEntry } from '@/components/strafen/PenaltyFeedItem'
-import { PenaltyTypeAdmin } from '@/components/strafen/PenaltyTypeAdmin'
 
 export default async function StrafenPage() {
   const member = await getSessionMember()
@@ -22,11 +21,12 @@ export default async function StrafenPage() {
     prisma.member.count({ where: { tripId: member.tripId } }),
   ])
 
-  const isAdmin = member.role === 'ADMIN'
-
   const feedEntries: PenaltyFeedEntry[] = entries.map((e) => {
     const myVote = e.votes.find((v) => v.memberId === member.id)
-    const canDelete = isAdmin || (e.proposedByMemberId === member.id && e.status !== 'APPROVED')
+    // Bewusst ohne Admin-Sonderrecht: ein zusaetzlicher Loeschen-Button waere die eine
+    // Stelle, an der dieser Screen dem Admin anders aussieht als allen anderen -- und damit
+    // die Rolle verraet. Admins raeumen Fremd-Eintraege in der Verwaltung auf.
+    const canDelete = e.proposedByMemberId === member.id && e.status !== 'APPROVED'
     return {
       id: e.id,
       status: e.status,
@@ -62,8 +62,6 @@ export default async function StrafenPage() {
           </Card>
         )}
       </div>
-
-      {isAdmin && <PenaltyTypeAdmin penaltyTypes={penaltyTypes} />}
     </div>
   )
 }
