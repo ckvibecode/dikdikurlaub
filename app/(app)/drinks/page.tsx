@@ -12,6 +12,15 @@ import { DrinkCategoryAdmin } from '@/components/drinks/DrinkCategoryAdmin'
 
 const timeFormatter = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: TRIP_TZ })
 
+// Mittag UTC als Instant plus timeZone 'UTC': so faellt der formatierte Wochentag garantiert auf
+// genau den Tag des Day-Keys, ohne Zeitzonen-Rueckrechnung.
+const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' })
+
+function formatDayKeyShort(key: string): string {
+  const [, month, day] = key.split('-')
+  return `${day}.${month}.`
+}
+
 export default async function DrinksPage() {
   const member = await getSessionMember()
   if (!member) return null
@@ -60,9 +69,20 @@ export default async function DrinksPage() {
     if (d > new Date(member.trip.endDate)) break
     dayKeys.push(getTripDayKey(d))
   }
+  // Heute liegt vor Reisebeginn (oder nach Reiseende) ausserhalb der Trip-Tage. Anhaengen
+  // allein reicht nicht: ohne Sortierung rendert der heutige Tag ganz rechts, obwohl er
+  // chronologisch der erste ist. Day-Keys sind 'YYYY-MM-DD', sortieren also lexikografisch
+  // gleich chronologisch.
   if (!dayKeys.includes(today)) dayKeys.push(today)
+  dayKeys.sort()
 
-  const chartDays = dayKeys.map((key, i) => ({ label: `T${i + 1}`, count: byDay.get(key) ?? 0 }))
+  const chartDays = dayKeys.map((key) => ({
+    key,
+    weekday: weekdayFormatter.format(new Date(`${key}T12:00:00Z`)),
+    dateLabel: formatDayKeyShort(key),
+    count: byDay.get(key) ?? 0,
+    isToday: key === today,
+  }))
 
   const customCategories = categories.filter((c) => !c.isDefault)
 

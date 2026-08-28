@@ -30,7 +30,7 @@ export function DrinkCounterGrid({
   initiallyLocked: boolean
   opensAtLabel: string
 }) {
-  const [pendingId, setPendingId] = useState<string | null>(null)
+  const [pendingIds, setPendingIds] = useState<string[]>([])
   const [, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [locked, setLocked] = useState(initiallyLocked)
@@ -49,11 +49,15 @@ export function DrinkCounterGrid({
   }, [opensAtMs])
 
   function handleLog(categoryId: string) {
+    // Bewusst kein `disabled` waehrend des Requests: das raeumt den Fokus auf <body> ab und
+    // sperrt alle vier Kacheln gleichzeitig. Doppeltipps auf dieselbe Kachel werden
+    // stattdessen hier verworfen, die uebrigen Kacheln bleiben bedienbar.
+    if (pendingIds.includes(categoryId)) return
     setError(null)
-    setPendingId(categoryId)
+    setPendingIds((ids) => [...ids, categoryId])
     startTransition(async () => {
       const result = await logDrink(categoryId)
-      setPendingId(null)
+      setPendingIds((ids) => ids.filter((id) => id !== categoryId))
       if (result?.error) setError(result.error)
     })
   }
@@ -75,12 +79,13 @@ export function DrinkCounterGrid({
           <button
             key={category.id}
             type="button"
-            disabled={locked || pendingId !== null}
+            disabled={locked}
+            aria-busy={pendingIds.includes(category.id)}
             aria-label={`${category.label} eintragen`}
             onClick={() => handleLog(category.id)}
             className={`relative flex flex-col items-center gap-1.5 rounded-2xl border border-white/[0.06] bg-surface px-2 py-3.5 transition-colors ${
               locked ? 'opacity-60' : 'active:bg-surface-hover'
-            } ${pendingId === category.id ? 'opacity-60' : ''}`}
+            } ${pendingIds.includes(category.id) ? 'opacity-60' : ''}`}
           >
             {/* border-2 statt ring/box-shadow: das System verbietet Schatten ausnahmslos. */}
             <span
