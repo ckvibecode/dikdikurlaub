@@ -5,7 +5,7 @@ import { getTripDayKey } from '@/lib/dates'
 import { Card } from '@/components/ui/Card'
 import { PillBadge } from '@/components/ui/PillBadge'
 import { StatNumber } from '@/components/ui/StatNumber'
-import { ParticipationToggle } from '@/components/plan/ParticipationToggle'
+import { PlanItemParticipation } from '@/components/plan/PlanItemParticipation'
 import { PenaltyFeedItem, type PenaltyFeedEntry } from '@/components/strafen/PenaltyFeedItem'
 import { getAvatarHex } from '@/lib/avatar'
 
@@ -192,19 +192,22 @@ export default async function HomePage() {
         <h2 className="mb-3 text-base font-bold text-foreground">Als Nächstes</h2>
         <div className="flex flex-col gap-3.5">
           {visiblePlanItems.map((item) => (
-            <div key={item.id} className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
+            <div key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
+              {/* flexBasis statt fester Spalte: solange der Titel mindestens 180px haette,
+                  bleibt die Aktion in derselben Zeile — sonst rutscht sie darunter, statt die
+                  Metazeile mitten im Wort umzubrechen. */}
+              <div className="min-w-0 flex-1" style={{ flexBasis: 180 }}>
                 <p className="truncate text-sm font-semibold text-foreground">{item.title}</p>
                 <p className="mt-0.5 text-sm text-muted-1">
                   {dayLabelFormatter.format(item.day)}
                   {item.startTime ? ` · ${item.startTime}${item.endTime ? `–${item.endTime}` : ''}` : ''}
                   {item.completions.length > 0 ? ` · ${item.completions.length} dabei` : ''}
-                  {item.points > 0 ? ` · +${item.points} Pkt` : ''}
                 </p>
               </div>
-              <ParticipationToggle
+              <PlanItemParticipation
                 planItemId={item.id}
                 joined={item.completions.some((c) => c.memberId === member.id)}
+                points={item.points}
                 itemTitle={item.title}
               />
             </div>

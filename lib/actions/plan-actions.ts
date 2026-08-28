@@ -4,10 +4,15 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { getSessionMember } from '@/lib/auth'
 import { applyPoints } from '@/lib/gamification'
+import { MAX_PLAN_ITEM_POINTS } from '@/lib/plan'
 
 export interface ActionState {
   error?: string
+  /** Nach erfolgreichem Anlegen: das Formular schliesst und springt zu dieser Karte. */
+  createdId?: string
+  createdTitle?: string
 }
+
 
 export async function addPlanItem(_prevState: ActionState, formData: FormData): Promise<ActionState> {
   const member = await getSessionMember()
@@ -30,8 +35,8 @@ export async function addPlanItem(_prevState: ActionState, formData: FormData): 
     return { error: 'Ungültiges Datum' }
   }
 
-  if (!Number.isInteger(points) || points < 0 || points > 50) {
-    return { error: 'Punkte müssen eine ganze Zahl zwischen 0 und 50 sein' }
+  if (!Number.isInteger(points) || points < 0 || points > MAX_PLAN_ITEM_POINTS) {
+    return { error: `Punkte müssen eine ganze Zahl zwischen 0 und ${MAX_PLAN_ITEM_POINTS} sein` }
   }
 
   const maxSort = await prisma.planItem.aggregate({
@@ -39,7 +44,7 @@ export async function addPlanItem(_prevState: ActionState, formData: FormData): 
     _max: { sortOrder: true },
   })
 
-  await prisma.planItem.create({
+  const created = await prisma.planItem.create({
     data: {
       tripId: member.tripId,
       day: dayDate,
@@ -55,7 +60,7 @@ export async function addPlanItem(_prevState: ActionState, formData: FormData): 
 
   revalidatePath('/plan')
   revalidatePath('/home')
-  return {}
+  return { createdId: created.id, createdTitle: created.title }
 }
 
 /** Bestätigt oder widerruft die eigene Teilnahme an einem Programmpunkt. Bei Bestätigung

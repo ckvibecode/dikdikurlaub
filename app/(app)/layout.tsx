@@ -16,7 +16,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col" style={memberTheme}>
-      <main className="mx-auto w-full max-w-md flex-1 overflow-y-auto">{children}</main>
+      <main aria-label="Inhalt" className="mx-auto w-full max-w-md flex-1 overflow-y-auto">
+        {children}
+      </main>
       <BottomNav />
     </div>
   )
