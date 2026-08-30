@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { logDrink } from '@/lib/actions/drink-actions'
 import { PlusIcon, LockIcon } from '@/components/icons'
 
@@ -22,14 +23,19 @@ function formatRemaining(ms: number): string {
 export function DrinkCounterGrid({
   categories,
   opensAtMs,
+  closesAtMs,
   initiallyLocked,
   opensAtLabel,
+  closesAtLabel,
 }: {
   categories: DrinkCategoryOption[]
   opensAtMs: number
+  closesAtMs: number
   initiallyLocked: boolean
   opensAtLabel: string
+  closesAtLabel: string
 }) {
+  const router = useRouter()
   const [pendingIds, setPendingIds] = useState<string[]>([])
   const [, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -37,16 +43,32 @@ export function DrinkCounterGrid({
   // Bleibt bis nach der Hydration null, damit Server- und Client-Markup identisch sind.
   const [remaining, setRemaining] = useState<string | null>(null)
 
+  // Ein Fenster laeuft ueber Mitternacht, also gilt es nur bis closesAt. Danach sind die vom
+  // Server gelieferten Grenzen veraltet - einmal nachladen holt das naechste Fenster und die
+  // zurueckgesetzten Tageszahlen. Das Ref verhindert, dass der Sekundentakt das wiederholt.
+  const refreshedRef = useRef(false)
+
   useEffect(() => {
+    refreshedRef.current = false
     const tick = () => {
-      const diff = opensAtMs - Date.now()
-      setLocked(diff > 0)
-      setRemaining(diff > 0 ? formatRemaining(diff) : null)
+      const now = Date.now()
+      if (now >= closesAtMs) {
+        setLocked(true)
+        setRemaining(null)
+        if (!refreshedRef.current) {
+          refreshedRef.current = true
+          router.refresh()
+        }
+        return
+      }
+      const untilOpen = opensAtMs - now
+      setLocked(untilOpen > 0)
+      setRemaining(untilOpen > 0 ? formatRemaining(untilOpen) : null)
     }
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [opensAtMs])
+  }, [opensAtMs, closesAtMs, router])
 
   function handleLog(categoryId: string) {
     // Bewusst kein `disabled` waehrend des Requests: das raeumt den Fokus auf <body> ab und
@@ -68,7 +90,8 @@ export function DrinkCounterGrid({
         <p className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-muted-1">
           <LockIcon className="h-4 w-4 shrink-0 text-muted-2" />
           <span>
-            Zählt ab <span className="font-semibold text-foreground">{opensAtLabel}</span>
+            Zählt von <span className="font-semibold text-foreground">{opensAtLabel}</span> bis{' '}
+            <span className="font-semibold text-foreground">{closesAtLabel}</span>
             {remaining && <span className="text-muted-2"> · noch {remaining}</span>}
           </span>
         </p>

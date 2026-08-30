@@ -85,6 +85,7 @@ export default async function DrinksPage() {
 
   const drinkWindow = getDrinkWindow()
   const opensAtLabel = timeFormatter.format(drinkWindow.opensAt)
+  const closesAtLabel = timeFormatter.format(drinkWindow.closesAt)
 
   return (
     <div className="flex flex-col gap-4 px-4.5 pb-6 pt-5.5">
@@ -94,8 +95,8 @@ export default async function DrinksPage() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-bold text-foreground">Heute</h2>
           <div className="flex items-baseline gap-2">
-            {/* Vor 18:00 bleibt die Zahl da, verliert aber die Signalfarbe: eine leuchtende
-                Null liest sich sonst wie ein Ziel, das noch zu erreichen waere. */}
+            {/* Ausserhalb des Fensters bleibt die Zahl da, verliert aber die Signalfarbe: eine
+                leuchtende Null liest sich sonst wie ein Ziel, das noch zu erreichen waere. */}
             <StatNumber size="xl" className={drinkWindow.open ? 'text-member' : 'text-muted-2'}>
               {todayTotal}
             </StatNumber>
@@ -138,8 +139,10 @@ export default async function DrinksPage() {
         <DrinkCounterGrid
           categories={categories}
           opensAtMs={drinkWindow.opensAt.getTime()}
+          closesAtMs={drinkWindow.closesAt.getTime()}
           initiallyLocked={!drinkWindow.open}
           opensAtLabel={opensAtLabel}
+          closesAtLabel={closesAtLabel}
         />
       </div>
 

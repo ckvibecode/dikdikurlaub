@@ -15,3 +15,9 @@ export function dayKeyDiff(a: string, b: string): number {
   const bUtc = Date.UTC(by, bm - 1, bd)
   return Math.round((bUtc - aUtc) / (1000 * 60 * 60 * 24))
 }
+
+/** Day-Key um ganze Kalendertage verschieben ('2026-08-30', -1 -> '2026-08-29'). */
+export function shiftDayKey(key: string, days: number): string {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
